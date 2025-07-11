@@ -18,11 +18,6 @@ export interface ICartItem {
     index: number;
 }
 
-export interface ICart {
-    items: ICartItem[];
-    total: number;
-}
-
 // Типы данных для заказа
 export interface IOrderForm {
     payment: 'card' | 'cash';
@@ -52,16 +47,20 @@ export interface IApiClient {
     createOrder(order: IOrder): Promise<{ total: number; items: string[] }>;
 }
 
+// Интерфейс сервиса для работы с товарами
+export interface IProductService {
+    getProducts(): Promise<IProduct[]>;
+}
+
 // Интерфейсы для моделей
 export interface IProductModel {
     items: IProduct[];
-    getProducts(): Promise<IProduct[]>;
+    setItems(items: IProduct[]): void;
     getProductById(id: string): IProduct | undefined;
 }
 
 export interface ICartModel {
     items: ICartItem[];
-    total: number;
     addItem(product: IProduct): void;
     removeItem(id: string): void;
     clear(): void;
@@ -76,9 +75,9 @@ export interface IOrderModel {
     setAddress(address: string): void;
     setEmail(email: string): void;
     setPhone(phone: string): void;
-    submit(cart: ICart): Promise<void>;
     reset(): void;
     isValid(): boolean;
+    getForm(): Partial<IOrderForm>;
 }
 
 // Интерфейсы для представлений
@@ -93,9 +92,26 @@ export interface IModalView extends IView {
     setContent(content: HTMLElement): void;
 }
 
-export interface IProductCardView extends IView {
-    setInCart(inCart: boolean): void;
+// Базовый интерфейс для всех представлений товаров
+export interface IProductView extends IView {
+    setTitle(title: string): void;
+    setImage(src: string): void;
     setPrice(price: number | null): void;
+    setCategory(category: ProductCategory): void;
+}
+
+export interface IProductCardView extends IProductView {
+    setInCart(inCart: boolean): void;
+}
+
+export interface IProductPreviewView extends IProductView {
+    setDescription(description: string): void;
+    setInCart(inCart: boolean): void;
+}
+
+export interface ICartItemView extends IProductView {
+    setIndex(index: number): void;
+    setDeleteHandler(handler: () => void): void;
 }
 
 export interface ICartView extends IView {
@@ -153,7 +169,6 @@ export interface ICartEvent {
 
 export interface IOrderEvent {
     form: Partial<IOrderForm>;
-    cart?: ICart;
 }
 
 export interface IModalEvent {
