@@ -70,6 +70,7 @@ npm run build
 Методы:
 - setItems(items: IProduct[]): void - устанавливает массив товаров (вызывается презентером)
 - getProductById(id: string): IProduct | undefined - возвращает товар по ID из поля items
+- getItems(): IProduct[] - возвращает весь массив товаров для отрисовки карточек в каталоге
 
 #### Класс CartModel
 Назначение: Управляет состоянием корзины пользователя.
@@ -104,30 +105,27 @@ npm run build
 - setPhone(phone: string): void - устанавливает телефон
 - getForm(): Partial<IOrderForm> - возвращает данные формы заказа
 - reset(): void - сбрасывает форму
-- isValid(): boolean - проверяет валидность формы
+- validate(): Partial<Record<keyof IOrderForm, string>> - проверяет валидность формы и возвращает объект с ошибками
 
 ### СЛОЙ ПРЕДСТАВЛЕНИЯ
 
 #### Базовый класс ProductView
-Назначение: Базовый класс для всех представлений товаров, содержащий общий функционал.
+Назначение: Базовый класс для всех представлений товаров, содержащий только общий функционал.
 
 Конструктор: 
-- Принимает шаблон товара
+- Принимает готовый DOM элемент товара (клон шаблона)
 
 Поля класса:
-- template: HTMLTemplateElement - шаблон товара
-- element: HTMLElement - DOM элемент товара
-- title: HTMLElement - заголовок товара
-- image: HTMLImageElement - изображение товара
-- price: HTMLElement - цена товара
-- category: HTMLElement - категория товара
+- container: HTMLElement - DOM элемент товара
+- _title: HTMLElement - заголовок товара
+- _price: HTMLElement - цена товара
+
+Сеттеры:
+- set title(value: string) - устанавливает заголовок товара
+- set price(value: number | null) - устанавливает цену товара
 
 Методы:
-- setTitle(title: string): void - устанавливает заголовок товара
-- setImage(src: string): void - устанавливает изображение товара
-- setPrice(price: number | null): void - устанавливает цену товара
-- setCategory(category: ProductCategory): void - устанавливает категорию товара
-- setDisabled(disabled: boolean): void - блокирует/разблокирует товар
+- render(data?: Partial<IProduct>): HTMLElement - рендерит товар с переданными данными
 
 #### Класс ModalView
 Назначение: Управляет модальными окнами приложения.
@@ -154,11 +152,17 @@ npm run build
 - Наследует от ProductView
 
 Поля класса:
-- button: HTMLButtonElement - кнопка действия
+- _image: HTMLImageElement - изображение товара
+- _category: HTMLElement - категория товара
+- _button: HTMLButtonElement - кнопка действия
+
+Сеттеры:
+- set image(value: string) - устанавливает изображение товара
+- set category(value: ProductCategory) - устанавливает категорию товара
+- set inCart(value: boolean) - изменяет состояние кнопки в зависимости от наличия в корзине
 
 Методы:
-- render(product: IProduct): void - рендерит карточку с данными товара
-- setInCart(inCart: boolean): void - изменяет состояние кнопки в зависимости от наличия в корзине
+- render(data?: Partial<IProduct>): HTMLElement - рендерит карточку с переданными данными
 
 #### Класс ProductPreviewView
 Назначение: Отображает детальную информацию о товаре в модальном окне.
@@ -167,13 +171,19 @@ npm run build
 - Наследует от ProductView
 
 Поля класса:
-- description: HTMLElement - описание товара
-- button: HTMLButtonElement - кнопка покупки
+- _image: HTMLImageElement - изображение товара
+- _category: HTMLElement - категория товара
+- _description: HTMLElement - описание товара
+- _button: HTMLButtonElement - кнопка покупки
+
+Сеттеры:
+- set image(value: string) - устанавливает изображение товара
+- set category(value: ProductCategory) - устанавливает категорию товара
+- set description(value: string) - устанавливает описание товара
+- set inCart(value: boolean) - изменяет текст кнопки в зависимости от состояния корзины
 
 Методы:
-- render(product: IProduct): void - рендерит превью с данными товара
-- setDescription(description: string): void - устанавливает описание товара
-- setInCart(inCart: boolean): void - изменяет текст кнопки в зависимости от состояния корзины
+- render(data?: Partial<IProduct>): HTMLElement - рендерит превью с переданными данными
 
 #### Класс CartItemView
 Назначение: Отображает товар в корзине.
@@ -182,50 +192,54 @@ npm run build
 - Наследует от ProductView
 
 Поля класса:
-- index: HTMLElement - номер товара в корзине
-- deleteButton: HTMLButtonElement - кнопка удаления
+- _index: HTMLElement - номер товара в корзине
+- _deleteButton: HTMLButtonElement - кнопка удаления
+
+Сеттеры:
+- set index(value: number) - устанавливает номер товара
+- set deleteHandler(handler: () => void) - устанавливает обработчик удаления
 
 Методы:
-- render(item: ICartItem): void - рендерит товар в корзине
-- setIndex(index: number): void - устанавливает номер товара
-- setDeleteHandler(handler: () => void): void - устанавливает обработчик удаления
+- render(data?: Partial<ICartItem>): HTMLElement - рендерит товар в корзине с переданными данными
 
 #### Класс CartView
 Назначение: Отображает содержимое корзины.
 
 Конструктор: 
-- Принимает шаблон корзины
+- Принимает готовый DOM элемент корзины (клон шаблона)
 
 Поля класса:
-- template: HTMLTemplateElement - шаблон корзины
-- element: HTMLElement - DOM элемент корзины
-- list: HTMLElement - список товаров
-- total: HTMLElement - общая стоимость
-- button: HTMLButtonElement - кнопка оформления заказа
+- container: HTMLElement - DOM элемент корзины
+- _list: HTMLElement - список товаров
+- _total: HTMLElement - общая стоимость
+- _button: HTMLButtonElement - кнопка оформления заказа
+
+Сеттеры:
+- set items(value: ICartItem[]) - устанавливает список товаров
+- set total(value: number) - устанавливает общую стоимость
+- set disabled(value: boolean) - блокирует/разблокирует кнопку оформления
 
 Методы:
-- render(): void - рендерит корзину
-- setItems(items: ICartItem[]): void - устанавливает список товаров
-- setTotal(total: number): void - устанавливает общую стоимость
-- setDisabled(disabled: boolean): void - блокирует/разблокирует кнопку оформления
+- render(data?: Partial<{ items: ICartItem[], total: number }>): HTMLElement - рендерит корзину с переданными данными
 
 #### Базовый класс FormView
 Назначение: Базовый класс для всех форм, содержащий общий функционал.
 
 Конструктор: 
-- Принимает шаблон формы
+- Принимает готовый DOM элемент формы (клон шаблона)
 
 Поля класса:
-- template: HTMLTemplateElement - шаблон формы
-- element: HTMLElement - DOM элемент формы
-- submitButton: HTMLButtonElement - кнопка отправки
-- errorsContainer: HTMLElement - контейнер для ошибок
+- container: HTMLElement - DOM элемент формы
+- _submitButton: HTMLButtonElement - кнопка отправки
+- _errorsContainer: HTMLElement - контейнер для ошибок
+
+Сеттеры:
+- set errors(value: string[]) - отображает ошибки валидации
+- set disabled(value: boolean) - блокирует/разблокирует форму
 
 Методы:
-- render(): void - рендерит форму
-- setErrors(errors: string[]): void - отображает ошибки валидации
+- render(data?: Partial<{ errors: string[] }>): HTMLElement - рендерит форму с переданными данными
 - clearErrors(): void - очищает ошибки
-- setDisabled(disabled: boolean): void - блокирует/разблокирует форму
 
 #### Класс PaymentFormView
 Назначение: Отображает форму выбора способа оплаты и ввода адреса доставки.
@@ -234,12 +248,15 @@ npm run build
 - Наследует от FormView
 
 Поля класса:
-- paymentButtons: HTMLButtonElement[] - кнопки выбора способа оплаты
-- addressInput: HTMLInputElement - поле ввода адреса
+- _paymentButtons: HTMLButtonElement[] - кнопки выбора способа оплаты
+- _addressInput: HTMLInputElement - поле ввода адреса
+
+Сеттеры:
+- set payment(value: 'card' | 'cash') - устанавливает выбранный способ оплаты
+- set address(value: string) - устанавливает адрес
 
 Методы:
-- setPayment(payment: 'card' | 'cash'): void - устанавливает выбранный способ оплаты
-- setAddress(address: string): void - устанавливает адрес
+- render(data?: Partial<{ payment: 'card' | 'cash', address: string }>): HTMLElement - рендерит форму с переданными данными
 
 #### Класс ContactsFormView
 Назначение: Отображает форму ввода контактных данных.
@@ -248,29 +265,34 @@ npm run build
 - Наследует от FormView
 
 Поля класса:
-- emailInput: HTMLInputElement - поле ввода email
-- phoneInput: HTMLInputElement - поле ввода телефона
+- _emailInput: HTMLInputElement - поле ввода email
+- _phoneInput: HTMLInputElement - поле ввода телефона
+
+Сеттеры:
+- set email(value: string) - устанавливает email
+- set phone(value: string) - устанавливает телефон
 
 Методы:
-- setEmail(email: string): void - устанавливает email
-- setPhone(phone: string): void - устанавливает телефон
+- render(data?: Partial<{ email: string, phone: string }>): HTMLElement - рендерит форму с переданными данными
 
 #### Класс SuccessView
 Назначение: Отображает сообщение об успешном оформлении заказа.
 
 Конструктор: 
-- Принимает шаблон успешного заказа
+- Принимает готовый DOM элемент сообщения (клон шаблона)
 
 Поля класса:
-- template: HTMLTemplateElement - шаблон успеха
-- element: HTMLElement - DOM элемент сообщения
-- title: HTMLElement - заголовок
-- description: HTMLElement - описание
-- button: HTMLButtonElement - кнопка закрытия
+- container: HTMLElement - DOM элемент сообщения
+- _title: HTMLElement - заголовок
+- _description: HTMLElement - описание
+- _button: HTMLButtonElement - кнопка закрытия
+
+Сеттеры:
+- set total(value: number) - устанавливает сумму заказа в описании
+- set disabled(value: boolean) - блокирует/разблокирует кнопку
 
 Методы:
-- render(total: number): void - рендерит сообщение с суммой заказа
-- setDisabled(disabled: boolean): void - блокирует/разблокирует кнопку
+- render(data?: Partial<{ total: number }>): HTMLElement - рендерит сообщение с переданными данными
 
 ### СЛОЙ ПРЕЗЕНТЕРА
 
@@ -322,19 +344,32 @@ npm run build
 2. Презентер обрабатывает событие PRODUCT_SELECTED и вызывает метод addItem() модели CartModel
 3. CartModel изменяет данные в поле items и генерирует событие CART_ITEM_ADDED
 4. Презентер обрабатывает событие CART_ITEM_ADDED и вызывает метод render() у CartView и ProductCardView
-5. CartView перерисовывается, отображая обновленный список товаров, а ProductCardView изменяет состояние кнопки на "Убрать из корзины"
+5. Презентер обновляет счетчик товаров в шапке сайта, отображая актуальное количество товаров в корзине
+6. CartView перерисовывается, отображая обновленный список товаров, а ProductCardView изменяет состояние кнопки на "Убрать из корзины"
+
+#### Пример взаимодействия при удалении товара из корзины:
+
+1. CartItemView реагирует на клик пользователя по кнопке удаления и генерирует событие PRODUCT_SELECTED с данными товара
+2. Презентер обрабатывает событие PRODUCT_SELECTED и вызывает метод removeItem() модели CartModel
+3. CartModel изменяет данные в поле items и генерирует событие CART_ITEM_REMOVED
+4. Презентер обрабатывает событие CART_ITEM_REMOVED и вызывает метод render() у CartView и ProductCardView
+5. Презентер обновляет счетчик товаров в шапке сайта, отображая актуальное количество товаров в корзине
+6. CartView перерисовывается, отображая обновленный список товаров, а ProductCardView изменяет состояние кнопки на "В корзину"
 
 #### Пример взаимодействия при отправке заказа:
 
-1. PaymentFormView реагирует на отправку формы и генерирует событие ORDER_PAYMENT_CHANGED
-2. Презентер обрабатывает событие и получает данные формы через OrderModel.getForm()
-3. Презентер переключается на ContactsFormView для ввода контактных данных
-4. ContactsFormView реагирует на отправку формы и генерирует событие ORDER_SUBMITTED
-5. Презентер обрабатывает событие ORDER_SUBMITTED и получает полные данные формы
-6. Презентер получает данные корзины через CartModel.getItems() и CartModel.getTotal()
-7. Презентер формирует объект IOrder из полученных данных
-8. Презентер использует ProductService.createOrder() для отправки заказа на сервер
-9. При успешном ответе сервера презентер генерирует событие ORDER_SUCCESS и обновляет представления
+1. PaymentFormView реагирует на отправку формы и генерирует событие ORDER_SUBMITTED (все данные уже в модели)
+2. Презентер обрабатывает событие ORDER_SUBMITTED и открывает форму с почтой и телефоном (ContactsFormView)
+3. ContactsFormView реагирует на отправку формы и генерирует событие ORDER_SUBMITTED (все данные уже в модели)
+4. Презентер обрабатывая второе событие ORDER_SUBMITTED выполняет следующие действия:
+   - Взять данные покупателя из модели OrderModel
+   - Взять сумму покупки из CartModel
+   - Взять список id товаров из CartModel
+   - Собрать из всего этого один объект, в том виде, как его требует сервер
+   - Отправить подготовленный объект на сервер через ProductService
+   - В блоке then получить ответ сервера и взять из него сумму покупки подтвержденную сервером
+   - Очистить корзину, данные покупателя
+   - Отобразить окно подтверждения, передав в него сумму покупки полученную с сервера
 
 ### Компоненты и их связи
 
@@ -372,3 +407,22 @@ npm run build
 - Успешное оформление: ORDER_SUCCESS
 - Открытие/закрытие модальных окон: MODAL_OPENED, MODAL_CLOSED
 - Валидация форм: FORM_VALIDATED, FORM_ERRORS
+
+### Валидация форм
+
+Метод `validate()` в OrderModel возвращает объект с ошибками валидации:
+- Если поле валидно - оно отсутствует в объекте
+- Если поле невалидно - содержит текст ошибки
+
+Пример возвращаемого объекта:
+```typescript
+{
+  email: 'Не указан email',
+  phone: 'Не указан телефон'
+}
+```
+
+Презентер анализирует объект ошибок:
+- Отсутствие полей означает их валидность
+- Наличие полей с текстом означает ошибки валидации
+- Готовые тексты ошибок передаются в представления для отображения

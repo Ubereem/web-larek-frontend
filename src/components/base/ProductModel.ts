@@ -17,4 +17,8 @@ export class ProductModel extends Model<{ items: IProduct[] }> {
     getProductById(id: string) {
         return this.items.find(p => p.id === id);
     }
+
+    getItems(): IProduct[] {
+        return this.items;
+    }
 } 

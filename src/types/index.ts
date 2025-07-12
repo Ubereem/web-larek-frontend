@@ -57,6 +57,7 @@ export interface IProductModel {
     items: IProduct[];
     setItems(items: IProduct[]): void;
     getProductById(id: string): IProduct | undefined;
+    getItems(): IProduct[];
 }
 
 export interface ICartModel {
@@ -95,16 +96,18 @@ export interface IModalView extends IView {
 // Базовый интерфейс для всех представлений товаров
 export interface IProductView extends IView {
     setTitle(title: string): void;
-    setImage(src: string): void;
     setPrice(price: number | null): void;
-    setCategory(category: ProductCategory): void;
 }
 
 export interface IProductCardView extends IProductView {
+    setImage(src: string): void;
+    setCategory(category: ProductCategory): void;
     setInCart(inCart: boolean): void;
 }
 
 export interface IProductPreviewView extends IProductView {
+    setImage(src: string): void;
+    setCategory(category: ProductCategory): void;
     setDescription(description: string): void;
     setInCart(inCart: boolean): void;
 }
