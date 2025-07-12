@@ -1,4 +1,5 @@
 import { IEvents } from './events';
+import { ICartItem } from '../../types';
 
 export class ModalView {
     protected container: HTMLElement;
@@ -113,7 +114,7 @@ export class ModalView {
         }
     }
 
-    showBasket(items: any[] = [], totalPrice: number = 0): void {
+    showBasket(items: ICartItem[] = [], totalPrice: number = 0): void {
         const template = document.querySelector('#basket') as HTMLTemplateElement;
         if (template) {
             const basketElement = template.content.cloneNode(true) as HTMLElement;
