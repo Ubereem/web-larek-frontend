@@ -1,5 +1,5 @@
 import { Model } from './Model';
-import { IProduct } from '../../types';
+import { IProduct, AppEvents } from '../../types';
 import { IEvents } from './events';
 
 export class ProductModel extends Model<{ items: IProduct[] }> {
@@ -9,12 +9,12 @@ export class ProductModel extends Model<{ items: IProduct[] }> {
         super({}, events);
     }
 
-    setItems(items: IProduct[]) {
+    setItems(items: IProduct[]): void {
         this.items = items;
-        this.emitChanges('products:changed', { items });
+        this.emitChanges(AppEvents.PRODUCTS_LOADED, { items });
     }
 
-    getProductById(id: string) {
+    getProductById(id: string): IProduct | undefined {
         return this.items.find(p => p.id === id);
     }
 

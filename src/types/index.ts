@@ -8,7 +8,7 @@ export interface IProduct {
     price: number | null; // null для бесценных товаров
 }
 
-export type ProductCategory = 'софт-скил' | 'хард-скил' | 'другое';
+export type ProductCategory = 'софт-скил' | 'хард-скил' | 'другое' | 'дополнительное' | 'кнопка';
 
 // Типы данных для корзины
 export interface ICartItem {

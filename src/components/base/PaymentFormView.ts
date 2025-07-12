@@ -1,49 +1,80 @@
 import { FormView } from './FormView';
+import { AppEvents } from '../../types';
+import { IEvents } from './events';
 
 export class PaymentFormView extends FormView {
-    private paymentButtons: NodeListOf<HTMLButtonElement>;
-    private addressInput: HTMLInputElement;
-    private payment: 'card' | 'cash' | null = null;
-    private address: string = '';
+    private _paymentButtons: HTMLButtonElement[];
+    private _addressInput: HTMLInputElement;
+    private events: IEvents;
+    private orderModel: any; // Будет передаваться из App
 
-    constructor(form: HTMLFormElement) {
-        super(form);
-        this.paymentButtons = form.querySelectorAll('.order__buttons .button');
-        this.addressInput = form.querySelector('input[name="address"]')!;
-        this.paymentButtons.forEach(btn => {
+    constructor(container: HTMLElement, events: IEvents, orderModel?: any) {
+        super(container);
+        this.events = events;
+        this.orderModel = orderModel;
+        this._paymentButtons = Array.from(container.querySelectorAll('.order__buttons .button')) as HTMLButtonElement[];
+        this._addressInput = container.querySelector('input[name="address"]') as HTMLInputElement;
+        
+        this.bindPaymentEvents();
+    }
+
+    private bindPaymentEvents(): void {
+        this._paymentButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                this.payment = btn.name as 'card' | 'cash';
-                this.onInput('payment', this.payment);
+                const payment = btn.name as 'card' | 'cash';
+                this.payment = payment;
+                if (this.orderModel) {
+                    this.orderModel.setPayment(payment);
+                }
             });
+        });
+
+        this._addressInput?.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            this.address = target.value;
+            if (this.orderModel) {
+                this.orderModel.setAddress(target.value);
+            }
         });
     }
 
-    render(data?: { payment?: 'card' | 'cash'; address?: string }): void {
-        if (data?.payment) this.payment = data.payment;
-        if (data?.address) this.address = data.address;
-        this.addressInput.value = this.address;
-        this.paymentButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.name === this.payment);
+    set payment(value: 'card' | 'cash') {
+        this._paymentButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.name === value);
         });
+        this.updateSubmitButton();
+    }
+
+    set address(value: string) {
+        if (this._addressInput) {
+            this._addressInput.value = value;
+        }
+        this.updateSubmitButton();
+    }
+
+    private updateSubmitButton(): void {
+        const submitButton = this.container.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (submitButton) {
+            const orderForm = this.orderModel?.getForm();
+            const hasPayment = orderForm?.payment;
+            const hasAddress = orderForm?.address && orderForm.address.trim() !== '';
+            
+            submitButton.disabled = !hasPayment || !hasAddress;
+        }
+    }
+
+    render(data?: Partial<{ payment: 'card' | 'cash', address: string, errors: string[] }>): HTMLElement {
+        super.render(data);
+        
+        if (data) {
+            if (data.payment !== undefined) this.payment = data.payment;
+            if (data.address !== undefined) this.address = data.address;
+        }
+        
+        return this.container;
     }
 
     protected onSubmit(): void {
-        // Здесь можно сгенерировать событие или вызвать callback
-    }
-
-    protected onInput(name: string, value: string): void {
-        if (name === 'address') this.address = value;
-        if (name === 'payment') this.payment = value as 'card' | 'cash';
-        // Здесь можно сгенерировать событие или вызвать callback
-    }
-
-    setPayment(payment: 'card' | 'cash'): void {
-        this.payment = payment;
-        this.render({ payment });
-    }
-
-    setAddress(address: string): void {
-        this.address = address;
-        this.render({ address });
+        this.events.emit(AppEvents.ORDER_SUBMITTED);
     }
 } 

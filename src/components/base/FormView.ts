@@ -1,40 +1,58 @@
 import { IView } from '../../types';
 
 export abstract class FormView implements IView {
-    protected form: HTMLFormElement;
-    protected submitButton: HTMLButtonElement;
-    protected errorsContainer: HTMLElement;
+    protected container: HTMLElement;
+    protected _submitButton: HTMLButtonElement;
+    protected _errorsContainer: HTMLElement;
 
-    constructor(form: HTMLFormElement) {
-        this.form = form;
-        this.submitButton = form.querySelector('button[type="submit"]')!;
-        this.errorsContainer = form.querySelector('.form__errors')!;
-        this.form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.onSubmit();
-        });
-        this.form.addEventListener('input', (e) => {
-            const target = e.target as HTMLInputElement;
-            this.onInput(target.name, target.value);
-        });
+    constructor(container: HTMLElement) {
+        this.container = container;
+        this._submitButton = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+        this._errorsContainer = container.querySelector('.form__errors') as HTMLElement;
+        
+        this.bindEvents();
     }
 
-    abstract render(data?: any): void;
+    private bindEvents(): void {
+        const form = this.container.querySelector('form') as HTMLFormElement;
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.onSubmit();
+            });
+        }
+    }
+
+    set errors(value: string[]) {
+        if (this._errorsContainer) {
+            this._errorsContainer.textContent = value.join(', ');
+            this._errorsContainer.style.display = value.length ? 'block' : 'none';
+        }
+    }
+
+    set disabled(value: boolean) {
+        if (this._submitButton) {
+            this._submitButton.disabled = value;
+        }
+    }
 
     setDisabled(disabled: boolean): void {
-        this.submitButton.disabled = disabled;
+        this.disabled = disabled;
     }
 
-    setErrors(errors: string[]): void {
-        this.errorsContainer.textContent = errors.join(', ');
-        this.errorsContainer.style.display = errors.length ? 'block' : 'none';
+    render(data?: Partial<{ errors: string[] }>): HTMLElement {
+        if (data && data.errors !== undefined) {
+            this.errors = data.errors;
+        }
+        return this.container;
     }
 
     clearErrors(): void {
-        this.errorsContainer.textContent = '';
-        this.errorsContainer.style.display = 'none';
+        if (this._errorsContainer) {
+            this._errorsContainer.textContent = '';
+            this._errorsContainer.style.display = 'none';
+        }
     }
 
     protected abstract onSubmit(): void;
-    protected abstract onInput(name: string, value: string): void;
 } 
