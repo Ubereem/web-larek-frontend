@@ -72,22 +72,29 @@ export class ProductPreviewView extends ProductView {
         super.render(data);
         
         if (data) {
+            // Устанавливаем все свойства через сеттеры
             if (data.image !== undefined) this.image = data.image;
             if (data.category !== undefined) this.category = data.category;
             if (data.description !== undefined) this.description = data.description;
             if (data.id !== undefined) this.container.dataset.id = data.id;
-            if (this._button) {
-                if (data.price === null) {
-                    this._button.disabled = true;
-                    this._button.textContent = 'Недоступно';
-                } else {
-                    this._button.disabled = false;
-                    this._button.textContent = this._inCart ? 'Удалить из корзины' : 'В корзину';
-                }
-            }
+            
+            // Обновляем состояние кнопки
+            this.updateButtonState(data.price);
         }
         
         return this.container;
+    }
+
+    private updateButtonState(price: number | null | undefined): void {
+        if (this._button) {
+            if (price === null) {
+                this._button.disabled = true;
+                this._button.textContent = 'Недоступно';
+            } else {
+                this._button.disabled = false;
+                this._button.textContent = this._inCart ? 'Удалить из корзины' : 'В корзину';
+            }
+        }
     }
 
     private _inCart: boolean = false;

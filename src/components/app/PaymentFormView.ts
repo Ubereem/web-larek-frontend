@@ -2,6 +2,13 @@ import { FormView } from '../base/FormView';
 import { AppEvents } from '../../types';
 import { IEvents } from '../base/events';
 
+interface IPaymentFormData {
+    payment?: 'card' | 'cash';
+    address?: string;
+    valid?: boolean;
+    errors?: string[];
+}
+
 export class PaymentFormView extends FormView {
     private _paymentButtons: HTMLButtonElement[];
     private _addressInput: HTMLInputElement;
@@ -20,13 +27,13 @@ export class PaymentFormView extends FormView {
         this._paymentButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const payment = btn.name as 'card' | 'cash';
-                this.events.emit(AppEvents.ORDER_PAYMENT_CHANGED, { payment });
+                this.events.emit('payment:method-selected', { payment });
             });
         });
 
         this._addressInput?.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
-            this.events.emit(AppEvents.ORDER_ADDRESS_CHANGED, { address: target.value });
+            this.events.emit('payment:address-changed', { address: target.value });
         });
     }
 
@@ -34,48 +41,46 @@ export class PaymentFormView extends FormView {
         this._paymentButtons.forEach(btn => {
             btn.classList.toggle('active', btn.name === value);
         });
-        this.updateSubmitButton();
     }
 
     set address(value: string) {
         if (this._addressInput) {
             this._addressInput.value = value;
         }
-        this.updateSubmitButton();
     }
 
-    private updateSubmitButton(): void {
+    set valid(value: boolean) {
         if (this._submitButton) {
-            // Проверяем состояние на основе данных, а не DOM
-            const hasPayment = this._paymentButtons.some(btn => btn.classList.contains('active'));
-            const hasAddress = this._addressInput?.value && this._addressInput.value.trim() !== '';
-            
-            this._submitButton.disabled = !hasPayment || !hasAddress;
+            this._submitButton.disabled = !value;
         }
     }
 
-    // Методы для получения текущих данных (используются презентером)
-    getPayment(): 'card' | 'cash' | null {
-        const activeButton = this._paymentButtons.find(btn => btn.classList.contains('active'));
-        return activeButton?.name as 'card' | 'cash' || null;
-    }
-
-    getAddress(): string {
-        return this._addressInput?.value || '';
-    }
-
-    render(data?: Partial<{ payment: 'card' | 'cash', address: string, errors: string[] }>): HTMLElement {
+    render(data?: Partial<IPaymentFormData>): HTMLElement {
         super.render(data);
         
         if (data) {
             if (data.payment !== undefined) this.payment = data.payment;
             if (data.address !== undefined) this.address = data.address;
+            if (data.valid !== undefined) this.valid = data.valid;
         }
         
         return this.container;
     }
 
     protected onSubmit(): void {
-        this.events.emit(AppEvents.ORDER_SUBMITTED);
+        this.events.emit('payment:next', {
+            payment: this.getPayment(),
+            address: this.getAddress()
+        });
+    }
+
+    // Методы для получения текущих данных (используются презентером)
+    private getPayment(): 'card' | 'cash' | null {
+        const activeButton = this._paymentButtons.find(btn => btn.classList.contains('active'));
+        return activeButton?.name as 'card' | 'cash' || null;
+    }
+
+    private getAddress(): string {
+        return this._addressInput?.value || '';
     }
 } 

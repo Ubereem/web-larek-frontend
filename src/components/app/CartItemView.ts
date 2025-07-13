@@ -41,6 +41,7 @@ export class CartItemView extends ProductView {
         super.render(data);
         
         if (data) {
+            // Устанавливаем все свойства через сеттеры
             if (data.index !== undefined) this.index = data.index;
             if (data.id !== undefined) this.container.dataset.id = data.id;
         }

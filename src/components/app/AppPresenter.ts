@@ -134,8 +134,13 @@ export class AppPresenter {
             }
         });
 
+        // Обработка событий формы оплаты
         this.events.on('payment:method-selected', (data: { payment: 'card' | 'cash' }) => {
             this.orderModel.setPayment(data.payment);
+        });
+
+        this.events.on('payment:address-changed', (data: { address: string }) => {
+            this.orderModel.setAddress(data.address);
         });
 
         this.events.on('payment:next', (data: { payment: 'card' | 'cash'; address: string }) => {
@@ -144,27 +149,24 @@ export class AppPresenter {
             this.openContactsForm();
         });
 
+        // Обработка событий формы контактов
+        this.events.on('contacts:email-changed', (data: { email: string }) => {
+            this.orderModel.setEmail(data.email);
+        });
+
+        this.events.on('contacts:phone-changed', (data: { phone: string }) => {
+            this.orderModel.setPhone(data.phone);
+        });
+
         this.events.on('contacts:submit', (data: { email: string; phone: string }) => {
             this.orderModel.setEmail(data.email);
             this.orderModel.setPhone(data.phone);
             this.submitOrder();
         });
 
-        // Обработчики событий изменения данных в моделях
-        this.events.on(AppEvents.ORDER_PAYMENT_CHANGED, (data: { form: Partial<IOrderForm> }) => {
-            this.updatePaymentFormView(data.form);
-        });
-
-        this.events.on(AppEvents.ORDER_ADDRESS_CHANGED, (data: { form: Partial<IOrderForm> }) => {
-            this.updatePaymentFormView(data.form);
-        });
-
-        this.events.on(AppEvents.ORDER_EMAIL_CHANGED, (data: { form: Partial<IOrderForm> }) => {
-            this.updateContactsFormView(data.form);
-        });
-
-        this.events.on(AppEvents.ORDER_PHONE_CHANGED, (data: { form: Partial<IOrderForm> }) => {
-            this.updateContactsFormView(data.form);
+        // Обработка изменений валидации формы
+        this.events.on('formErrors:change', (errors: Partial<Record<string, string>>) => {
+            this.updateFormValidation(errors);
         });
 
         this.events.on('basket:remove', (item: any) => {
@@ -249,9 +251,8 @@ export class AppPresenter {
 
     private handleOrderSubmission(): void {
         const orderForm = this.orderModel.getForm();
-        const errors = this.orderModel.validate();
         
-        if (Object.keys(errors).length === 0) {
+        if (this.orderModel.isValid()) {
             // Если это первая форма (оплата), переходим к контактам
             if (orderForm.payment && orderForm.address && !orderForm.email) {
                 this.openContactsForm();
@@ -260,8 +261,8 @@ export class AppPresenter {
                 this.submitOrder();
             }
         } else {
-            // Показываем ошибки
-            this.showFormErrors(errors);
+            // Ошибки уже показаны через событие formErrors:change
+            console.log('Form validation failed');
         }
     }
 
@@ -321,6 +322,27 @@ export class AppPresenter {
             if (productId) {
                 this.productPreviewView.inCart = this.cartModel.isInCart(productId);
             }
+        }
+    }
+
+    private updateFormValidation(errors: Partial<Record<string, string>>): void {
+        // Обновляем форму оплаты, если она открыта
+        if (this.isModalOpen() && this.isPaymentFormOpen()) {
+            const form = this.orderModel.getForm();
+            const isPaymentValid = !errors.payment && !errors.address;
+            
+            this.modal.showPaymentForm();
+            // Здесь нужно обновить форму с данными о валидности
+            // Но пока у нас нет прямого доступа к форме в модальном окне
+        }
+
+        // Обновляем форму контактов, если она открыта
+        if (this.isModalOpen() && this.isContactsFormOpen()) {
+            const form = this.orderModel.getForm();
+            const isContactsValid = !errors.email && !errors.phone;
+            
+            this.modal.showContactsForm();
+            // Здесь нужно обновить форму с данными о валидности
         }
     }
 
