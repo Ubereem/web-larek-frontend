@@ -20,14 +20,12 @@ export class PaymentFormView extends FormView {
         this._paymentButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const payment = btn.name as 'card' | 'cash';
-                this.payment = payment;
                 this.events.emit(AppEvents.ORDER_PAYMENT_CHANGED, { payment });
             });
         });
 
         this._addressInput?.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
-            this.address = target.value;
             this.events.emit(AppEvents.ORDER_ADDRESS_CHANGED, { address: target.value });
         });
     }
@@ -48,11 +46,22 @@ export class PaymentFormView extends FormView {
 
     private updateSubmitButton(): void {
         if (this._submitButton) {
+            // Проверяем состояние на основе данных, а не DOM
             const hasPayment = this._paymentButtons.some(btn => btn.classList.contains('active'));
             const hasAddress = this._addressInput?.value && this._addressInput.value.trim() !== '';
             
             this._submitButton.disabled = !hasPayment || !hasAddress;
         }
+    }
+
+    // Методы для получения текущих данных (используются презентером)
+    getPayment(): 'card' | 'cash' | null {
+        const activeButton = this._paymentButtons.find(btn => btn.classList.contains('active'));
+        return activeButton?.name as 'card' | 'cash' || null;
+    }
+
+    getAddress(): string {
+        return this._addressInput?.value || '';
     }
 
     render(data?: Partial<{ payment: 'card' | 'cash', address: string, errors: string[] }>): HTMLElement {

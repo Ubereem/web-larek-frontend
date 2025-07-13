@@ -19,13 +19,11 @@ export class ContactsFormView extends FormView {
     private bindInputEvents(): void {
         this._emailInput?.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
-            this.email = target.value;
             this.events.emit(AppEvents.ORDER_EMAIL_CHANGED, { email: target.value });
         });
 
         this._phoneInput?.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
-            this.phone = target.value;
             this.events.emit(AppEvents.ORDER_PHONE_CHANGED, { phone: target.value });
         });
     }
@@ -51,6 +49,15 @@ export class ContactsFormView extends FormView {
             
             this._submitButton.disabled = !hasEmail || !hasPhone;
         }
+    }
+
+    // Методы для получения текущих данных (используются презентером)
+    getEmail(): string {
+        return this._emailInput?.value || '';
+    }
+
+    getPhone(): string {
+        return this._phoneInput?.value || '';
     }
 
     render(data?: Partial<{ email: string, phone: string, errors: string[] }>): HTMLElement {

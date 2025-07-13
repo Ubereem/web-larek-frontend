@@ -1,22 +1,34 @@
 import { IOrderForm } from '../../types';
 
+import { IEvents } from '../base/events';
+import { AppEvents } from '../../types';
+
 export class OrderModel {
     form: Partial<IOrderForm> = {};
+    private events: IEvents;
+
+    constructor(events: IEvents) {
+        this.events = events;
+    }
 
     setPayment(payment: 'card' | 'cash'): void {
         this.form.payment = payment;
+        this.events.emit(AppEvents.ORDER_PAYMENT_CHANGED, { form: this.form });
     }
 
     setAddress(address: string): void {
         this.form.address = address;
+        this.events.emit(AppEvents.ORDER_ADDRESS_CHANGED, { form: this.form });
     }
 
     setEmail(email: string): void {
         this.form.email = email;
+        this.events.emit(AppEvents.ORDER_EMAIL_CHANGED, { form: this.form });
     }
 
     setPhone(phone: string): void {
         this.form.phone = phone;
+        this.events.emit(AppEvents.ORDER_PHONE_CHANGED, { form: this.form });
     }
 
     getForm(): Partial<IOrderForm> {
@@ -25,6 +37,7 @@ export class OrderModel {
 
     reset(): void {
         this.form = {};
+        this.events.emit(AppEvents.ORDER_PAYMENT_CHANGED, { form: this.form });
     }
 
     validate(): Partial<Record<keyof IOrderForm, string>> {
