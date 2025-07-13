@@ -101,6 +101,7 @@ export class AppModalView extends ModalView {
             const addressInput = form.querySelector('input[name="address"]') as HTMLInputElement;
             const cardButton = form.querySelector('button[name="card"]') as HTMLButtonElement;
             const cashButton = form.querySelector('button[name="cash"]') as HTMLButtonElement;
+            const errorsContainer = form.querySelector('.form__errors') as HTMLElement;
             
             let selectedPayment: 'card' | 'cash' | null = null;
             
@@ -108,6 +109,20 @@ export class AppModalView extends ModalView {
                 const addressValid = addressInput.value.trim() !== '';
                 const paymentValid = selectedPayment !== null;
                 nextButton.disabled = !(addressValid && paymentValid);
+                
+                // Показываем ошибки
+                const errors: string[] = [];
+                if (!paymentValid) {
+                    errors.push('Не выбран способ оплаты');
+                }
+                if (!addressValid) {
+                    errors.push('Не указан адрес доставки');
+                }
+                
+                if (errorsContainer) {
+                    errorsContainer.textContent = errors.join(', ');
+                    errorsContainer.style.display = errors.length ? 'block' : 'none';
+                }
             };
             
             // Обработчики для кнопок способа оплаты
@@ -144,6 +159,8 @@ export class AppModalView extends ModalView {
                             payment: selectedPayment,
                             address: addressInput.value 
                         });
+                    } else {
+                        validateForm(); // Показываем ошибки при попытке отправки
                     }
                 });
             }
@@ -161,12 +178,27 @@ export class AppModalView extends ModalView {
             const payButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
             const emailInput = form.querySelector('input[name="email"]') as HTMLInputElement;
             const phoneInput = form.querySelector('input[name="phone"]') as HTMLInputElement;
+            const errorsContainer = form.querySelector('.form__errors') as HTMLElement;
             
             const validateForm = () => {
                 const emailValid = emailInput.value.trim() !== '';
                 const phoneValid = phoneInput.value.trim() !== '';
                 if (payButton) {
                     payButton.disabled = !(emailValid && phoneValid);
+                }
+                
+                // Показываем ошибки
+                const errors: string[] = [];
+                if (!emailValid) {
+                    errors.push('Не указан email');
+                }
+                if (!phoneValid) {
+                    errors.push('Не указан телефон');
+                }
+                
+                if (errorsContainer) {
+                    errorsContainer.textContent = errors.join(', ');
+                    errorsContainer.style.display = errors.length ? 'block' : 'none';
                 }
             };
             
@@ -175,10 +207,14 @@ export class AppModalView extends ModalView {
             
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                this.events?.emit('contacts:submit', {
-                    email: emailInput.value,
-                    phone: phoneInput.value
-                });
+                if (emailInput.value.trim() && phoneInput.value.trim()) {
+                    this.events?.emit('contacts:submit', {
+                        email: emailInput.value,
+                        phone: phoneInput.value
+                    });
+                } else {
+                    validateForm(); // Показываем ошибки при попытке отправки
+                }
             });
             
             this.contentElement = contactsForm;

@@ -8,6 +8,7 @@
 - Webpack - сборщик модулей
 - SCSS - препроцессор CSS
 - HTML5 - разметка
+- MVP архитектура - Model-View-Presenter
 - Event-driven architecture - событийно-ориентированная архитектура
 
 ## Инструкция по сборке и запуску
@@ -51,12 +52,11 @@ npm run build
 
 ### Оформление заказа
 - Двухэтапная форма оформления заказа
-- Выбор способа оплаты (карта/наличные)
-- Ввод адреса доставки
-- Ввод контактных данных (email, телефон)
-- Валидация всех полей формы
-- Блокировка кнопки отправки при невалидных данных
-- Отображение ошибок валидации
+- Выбор способа оплаты (Онлайн/При получении)
+- Ввод адреса доставки и контактных данных (email, телефон)
+- Валидация всех полей формы с отображением ошибок
+- Блокировка кнопок отправки при невалидных данных
+- При успешной оплате - сообщение об успехе и очистка корзины
 
 ### Модальные окна
 - Универсальная система модальных окон
@@ -78,10 +78,11 @@ npm run build
 
 ### Основные принципы архитектуры
 
-- Изолированность - каждый компонент может работать независимо
-- Единственная ответственность - каждый класс решает одну конкретную задачу
-- Масштабируемость - возможность расширения функциональности без изменения базового кода
-- Событийно-ориентированное взаимодействие - компоненты общаются через события
+- **Разделение ответственности** - каждый компонент отвечает за свою область
+- **Инверсия зависимостей** - компоненты получают зависимости через конструктор
+- **Событийно-ориентированное взаимодействие** - компоненты общаются через события
+- **Использование темплейтов** - все компоненты создаются из HTML-темплейтов
+- **Валидация в модели** - только модель принимает решения о валидности данных
 
 ### СЛОЙ МОДЕЛЬ
 
@@ -89,10 +90,11 @@ npm run build
 Назначение: Обеспечивает взаимодействие с сервером для получения данных о товарах.
 
 Конструктор: 
-- Принимает базовый URL для API
+- Принимает базовый URL для API и OrderModel для передачи данных
 
 Поля класса:
 - api: Api - клиент для работы с API
+- orderModel: OrderModel - модель заказа
 
 Методы:
 - getProducts(): Promise<IProduct[]> - загружает товары с сервера
@@ -102,13 +104,14 @@ npm run build
 Назначение: Управляет данными о товарах.
 
 Конструктор: 
-- Не принимает параметров
+- Принимает EventEmitter для эмита событий
 
 Поля класса:
 - items: IProduct[] - массив товаров
+- events: EventEmitter - система событий
 
 Методы:
-- setItems(items: IProduct[]): void - устанавливает массив товаров (вызывается презентером)
+- setItems(items: IProduct[]): void - устанавливает массив товаров и эмитит событие PRODUCTS_LOADED
 - getProductById(id: string): IProduct | undefined - возвращает товар по ID из поля items
 - getItems(): IProduct[] - возвращает весь массив товаров для отрисовки карточек в каталоге
 
@@ -116,14 +119,15 @@ npm run build
 Назначение: Управляет состоянием корзины пользователя.
 
 Конструктор: 
-- Не принимает параметров
+- Принимает EventEmitter для эмита событий
 
 Поля класса:
 - items: ICartItem[] - массив товаров в корзине
+- events: EventEmitter - система событий
 
 Методы:
-- addItem(product: IProduct): void - добавляет товар в корзину, создавая ICartItem с индексом
-- removeItem(id: string): void - удаляет товар из корзины по ID
+- addItem(product: IProduct): void - добавляет товар в корзину, создавая ICartItem с индексом, эмитит CART_ITEM_ADDED
+- removeItem(id: string): void - удаляет товар из корзины по ID, эмитит CART_ITEM_REMOVED
 - clear(): void - очищает корзину
 - getItems(): ICartItem[] - возвращает массив товаров в корзине
 - getTotal(): number - вычисляет и возвращает общую стоимость корзины на основе цен товаров в items
@@ -133,21 +137,42 @@ npm run build
 Назначение: Управляет данными формы заказа и валидацией.
 
 Конструктор: 
-- Не принимает параметров
+- Принимает EventEmitter для эмита событий
 
 Поля класса:
 - form: Partial<IOrderForm> - данные формы заказа (способ оплаты, адрес, email, телефон)
+- formErrors: Partial<Record<keyof IOrderForm, string>> - ошибки валидации
+- events: EventEmitter - система событий
 
 Методы:
-- setPayment(payment: 'card' | 'cash'): void - устанавливает способ оплаты
-- setAddress(address: string): void - устанавливает адрес доставки
-- setEmail(email: string): void - устанавливает email
-- setPhone(phone: string): void - устанавливает телефон
+- setPayment(payment: 'card' | 'cash'): void - устанавливает способ оплаты и валидирует форму
+- setAddress(address: string): void - устанавливает адрес доставки и валидирует форму
+- setEmail(email: string): void - устанавливает email и валидирует форму
+- setPhone(phone: string): void - устанавливает телефон и валидирует форму
 - getForm(): Partial<IOrderForm> - возвращает данные формы заказа
-- reset(): void - сбрасывает форму
-- validate(): Partial<Record<keyof IOrderForm, string>> - проверяет валидность формы и возвращает объект с ошибками
+- getFormErrors(): Partial<Record<keyof IOrderForm, string>> - возвращает ошибки валидации
+- reset(): void - сбрасывает форму и ошибки
+- isValid(): boolean - проверяет валидность формы
+- validateForm(): void - приватный метод валидации, эмитит formErrors:change и order:ready
 
 ### СЛОЙ ПРЕДСТАВЛЕНИЯ
+
+#### Базовый класс Component
+Назначение: Базовый класс для всех компонентов представления.
+
+Конструктор: 
+- Принимает готовый DOM элемент
+
+Поля класса:
+- container: HTMLElement - DOM элемент компонента
+
+Методы:
+- render(data?: Partial<T>): HTMLElement - рендерит компонент с переданными данными
+- setText(element: HTMLElement, value: unknown): void - устанавливает текстовое содержимое
+- setDisabled(element: HTMLElement, state: boolean): void - блокирует/разблокирует элемент
+- setHidden(element: HTMLElement): void - скрывает элемент
+- setVisible(element: HTMLElement): void - показывает элемент
+- setImage(element: HTMLImageElement, src: string, alt?: string): void - устанавливает изображение
 
 #### Базовый класс ProductView
 Назначение: Базовый класс для всех представлений товаров, содержащий только общий функционал.
@@ -167,34 +192,40 @@ npm run build
 Методы:
 - render(data?: Partial<IProduct>): HTMLElement - рендерит товар с переданными данными
 
-#### Класс ModalView
+#### Класс AppModalView
 Назначение: Управляет модальными окнами приложения.
 
 Конструктор: 
-- Принимает селектор контейнера модального окна
+- Принимает селектор контейнера модального окна и EventEmitter
 
 Поля класса:
 - container: HTMLElement - контейнер модального окна
-- content: HTMLElement - элемент для контента
-- closeButton: HTMLElement - кнопка закрытия
+- events: EventEmitter - система событий
 
 Методы:
-- open(): void - открывает модальное окно
-- close(): void - закрывает модальное окно
-- setContent(content: HTMLElement): void - устанавливает контент в модальное окно
-- render() - рендерит модальное окно
-- setDisabled(disabled: boolean): void - блокирует/разблокирует модальное окно
+- showBasket(items: ICartItem[], total: number): void - показывает корзину
+- showPaymentForm(): void - показывает форму оплаты с валидацией
+- showContactsForm(): void - показывает форму контактов с валидацией
+- showSuccess(total: number): void - показывает сообщение об успехе
+- render(content: HTMLElement): void - рендерит переданный контент
+- isOpen(): boolean - проверяет, открыто ли модальное окно
+
+**Особенности валидации в модальных окнах:**
+- Валидация в реальном времени при вводе данных
+- Отображение ошибок в элементе `.form__errors`
+- Блокировка кнопок отправки при невалидных данных
 
 #### Класс ProductCardView
 Назначение: Отображает карточку товара в каталоге.
 
 Конструктор: 
-- Наследует от ProductView
+- Наследует от ProductView, принимает DOM элемент и EventEmitter
 
 Поля класса:
 - _image: HTMLImageElement - изображение товара
 - _category: HTMLElement - категория товара
 - _button: HTMLButtonElement - кнопка действия
+- events: EventEmitter - система событий
 
 Сеттеры:
 - set image(value: string) - устанавливает изображение товара
@@ -203,18 +234,20 @@ npm run build
 
 Методы:
 - render(data?: Partial<IProduct>): HTMLElement - рендерит карточку с переданными данными
+- bindEvents(): void - привязывает обработчики событий
 
 #### Класс ProductPreviewView
 Назначение: Отображает детальную информацию о товаре в модальном окне.
 
 Конструктор: 
-- Наследует от ProductView
+- Наследует от ProductView, принимает DOM элемент и EventEmitter
 
 Поля класса:
 - _image: HTMLImageElement - изображение товара
 - _category: HTMLElement - категория товара
 - _description: HTMLElement - описание товара
 - _button: HTMLButtonElement - кнопка покупки
+- events: EventEmitter - система событий
 
 Сеттеры:
 - set image(value: string) - устанавливает изображение товара
@@ -229,15 +262,15 @@ npm run build
 Назначение: Отображает товар в корзине.
 
 Конструктор: 
-- Наследует от ProductView
+- Наследует от ProductView, принимает DOM элемент и EventEmitter
 
 Поля класса:
 - _index: HTMLElement - номер товара в корзине
 - _deleteButton: HTMLButtonElement - кнопка удаления
+- events: EventEmitter - система событий
 
 Сеттеры:
 - set index(value: number) - устанавливает номер товара
-- set deleteHandler(handler: () => void) - устанавливает обработчик удаления
 
 Методы:
 - render(data?: Partial<ICartItem>): HTMLElement - рендерит товар в корзине с переданными данными
@@ -246,22 +279,49 @@ npm run build
 Назначение: Отображает содержимое корзины.
 
 Конструктор: 
-- Принимает готовый DOM элемент корзины (клон шаблона)
+- Принимает готовый DOM элемент корзины (клон шаблона) и EventEmitter
 
 Поля класса:
 - container: HTMLElement - DOM элемент корзины
 - _list: HTMLElement - список товаров
 - _total: HTMLElement - общая стоимость
 - _button: HTMLButtonElement - кнопка оформления заказа
-
-Сеттеры:
-- set items(value: ICartItem[]) - устанавливает список товаров
-- set total(value: number) - устанавливает общую стоимость
-- set disabled(value: boolean) - блокирует/разблокирует кнопку оформления
+- events: EventEmitter - система событий
 
 Методы:
 - render(data?: Partial<{ items: ICartItem[], total: number }>): HTMLElement - рендерит корзину с переданными данными
-- Отображение сообщения "Корзина пуста" при отсутствии товаров
+
+#### Класс HeaderBasketView
+Назначение: Управляет кнопкой корзины в шапке сайта.
+
+Конструктор: 
+- Принимает DOM элемент шапки и EventEmitter
+
+Поля класса:
+- container: HTMLElement - DOM элемент шапки
+- basketButton: HTMLElement - кнопка корзины
+- counter: HTMLElement - счетчик товаров
+- events: EventEmitter - система событий
+
+Методы:
+- updateCounter(count: number): void - обновляет счетчик товаров
+- bindEvents(): void - привязывает обработчики событий
+
+#### Класс ProductGalleryView
+Назначение: Управляет галерией товаров.
+
+Конструктор: 
+- Принимает DOM элемент галерии и EventEmitter
+
+Поля класса:
+- container: HTMLElement - DOM элемент галерии
+- productCardViews: ProductCardView[] - массив карточек товаров
+- events: EventEmitter - система событий
+
+Методы:
+- render(products: IProduct[], inCartItems: string[]): void - рендерит галерию товаров
+- updateCartStatus(inCartItems: string[]): void - обновляет состояние корзин в карточках
+- getProductCardViews(): ProductCardView[] - возвращает массив карточек
 
 #### Базовый класс FormView
 Назначение: Базовый класс для всех форм, содержащий общий функционал.
@@ -286,68 +346,97 @@ npm run build
 Назначение: Отображает форму выбора способа оплаты и ввода адреса доставки.
 
 Конструктор: 
-- Наследует от FormView
+- Наследует от FormView, принимает DOM элемент и EventEmitter
 
 Поля класса:
 - _paymentButtons: HTMLButtonElement[] - кнопки выбора способа оплаты
 - _addressInput: HTMLInputElement - поле ввода адреса
+- events: EventEmitter - система событий
 
 Сеттеры:
 - set payment(value: 'card' | 'cash') - устанавливает выбранный способ оплаты
 - set address(value: string) - устанавливает адрес
+- set valid(value: boolean) - устанавливает валидность формы
 
 Методы:
-- render(data?: Partial<{ payment: 'card' | 'cash', address: string }>): HTMLElement - рендерит форму с переданными данными
-- Валидация: кнопка активируется только при выбранном способе оплаты и заполненном адресе
+- render(data?: Partial<IPaymentFormData>): HTMLElement - рендерит форму с переданными данными
+- bindEvents(): void - привязывает обработчики событий
 
 #### Класс ContactsFormView
 Назначение: Отображает форму ввода контактных данных.
 
 Конструктор: 
-- Наследует от FormView
+- Наследует от FormView, принимает DOM элемент и EventEmitter
 
 Поля класса:
 - _emailInput: HTMLInputElement - поле ввода email
 - _phoneInput: HTMLInputElement - поле ввода телефона
+- events: EventEmitter - система событий
 
 Сеттеры:
 - set email(value: string) - устанавливает email
 - set phone(value: string) - устанавливает телефон
+- set valid(value: boolean) - устанавливает валидность формы
 
 Методы:
-- render(data?: Partial<{ email: string, phone: string }>): HTMLElement - рендерит форму с переданными данными
-- Валидация: кнопка активируется только при заполненных email и телефоне
-
-#### Класс SuccessView
-Назначение: Отображает сообщение об успешном оформлении заказа.
-
-Конструктор: 
-- Принимает готовый DOM элемент сообщения (клон шаблона)
-
-Поля класса:
-- container: HTMLElement - DOM элемент сообщения
-- _title: HTMLElement - заголовок
-- _description: HTMLElement - описание
-- _button: HTMLButtonElement - кнопка закрытия
-
-Сеттеры:
-- set total(value: number) - устанавливает сумму заказа в описании
-- set disabled(value: boolean) - блокирует/разблокирует кнопку
-
-Методы:
-- render(data?: Partial<{ total: number }>): HTMLElement - рендерит сообщение с переданными данными
+- render(data?: Partial<IContactsFormData>): HTMLElement - рендерит форму с переданными данными
+- bindEvents(): void - привязывает обработчики событий
 
 ### СЛОЙ ПРЕЗЕНТЕРА
 
-Код презентера размещен в основном скрипте приложения (src/index.ts) и не выделен в отдельные классы. Презентер координирует взаимодействие между моделями, представлениями и API через систему событий.
+#### Класс AppPresenter
+Назначение: Координирует взаимодействие между моделями, представлениями и API через систему событий.
 
-**Роль презентера в работе с API:**
-- Использует ProductService для получения данных о товарах с сервера
-- Передает полученные данные в ProductModel через метод setItems()
-- Получает данные из моделей (ProductModel, CartModel, OrderModel)
-- Собирает необходимые объекты для отправки на сервер
-- Использует ProductService для выполнения запросов к серверу
-- Обрабатывает ответы сервера и обновляет модели и представления
+Конструктор: 
+- Принимает все зависимости: EventEmitter, ProductService, модели и представления
+
+Поля класса:
+- events: EventEmitter - система событий
+- productService: ProductService - сервис для работы с API
+- productModel: ProductModel - модель товаров
+- cartModel: CartModel - модель корзины
+- orderModel: OrderModel - модель заказа
+- modal: AppModalView - модальное окно
+- cartView: CartView - представление корзины
+- headerBasketView: HeaderBasketView - представление кнопки корзины
+- productGalleryView: ProductGalleryView - представление галерии товаров
+
+Методы:
+- bindEvents(): void - привязывает обработчики событий
+- loadProducts(): Promise<void> - загружает товары с сервера
+- renderProducts(): void - рендерит товары в галерии
+- updateCartView(): void - обновляет представление корзины
+- updateProductCards(): void - обновляет карточки товаров
+- updateCartCounter(): void - обновляет счетчик в шапке
+- openCartModal(): void - открывает модальное окно корзины
+- openPaymentForm(): void - открывает форму оплаты
+- openContactsForm(): void - открывает форму контактов
+- handleOrderSubmission(): void - обрабатывает отправку заказа
+- submitOrder(): Promise<void> - отправляет заказ на сервер
+- showSuccess(total: number): void - показывает сообщение об успехе
+- updateFormValidation(errors: Partial<Record<string, string>>): void - обновляет валидацию форм
+
+#### Класс App
+Назначение: Главный класс приложения, инициализирует все компоненты.
+
+Конструктор: 
+- Создает все базовые сервисы и компоненты
+
+Поля класса:
+- events: EventEmitter - система событий
+- productService: ProductService - сервис для работы с API
+- productModel: ProductModel - модель товаров
+- cartModel: CartModel - модель корзины
+- orderModel: OrderModel - модель заказа
+- modal: AppModalView - модальное окно
+- cartView: CartView - представление корзины
+- headerBasketView: HeaderBasketView - представление кнопки корзины
+- productGalleryView: ProductGalleryView - представление галерии товаров
+- presenter: AppPresenter - презентер приложения
+
+Методы:
+- initializeViews(): void - инициализирует все представления
+- initializePresenter(): void - инициализирует презентер
 
 ### Базовые классы
 
@@ -369,108 +458,152 @@ npm run build
 - Обработка ошибок
 - Настройка заголовков запросов
 
+#### Утилита template
+Назначение: Создает элементы из HTML-темплейтов.
+
+Функции:
+- createElementFromTemplate(templateId: string): HTMLElement - создает элемент из темплейта по ID
+
 ### Событийно-ориентированное взаимодействие
 
-Приложение использует событийно-ориентированный подход для взаимодействия между компонентами. Все события определены в перечислении AppEvents.
+Приложение использует событийно-ориентированный подход для взаимодействия между компонентами.
+
+#### Основные события:
+
+**От моделей:**
+- `PRODUCTS_LOADED` - товары загружены
+- `CART_ITEM_ADDED` - товар добавлен в корзину
+- `CART_ITEM_REMOVED` - товар удален из корзины
+- `formErrors:change` - изменились ошибки валидации
+- `order:ready` - заказ готов к отправке
+
+**От представлений:**
+- `PRODUCT_SELECTED` - выбран товар
+- `MODAL_OPENED` - открыто модальное окно
+- `header:basket-clicked` - клик по кнопке корзины в шапке
+- `payment:method-selected` - выбран способ оплаты
+- `payment:address-changed` - изменился адрес
+- `payment:next` - переход к следующему шагу оплаты
+- `contacts:email-changed` - изменился email
+- `contacts:phone-changed` - изменился телефон
+- `contacts:submit` - отправлена форма контактов
+- `basket:checkout` - оформление заказа из корзины
+- `basket:remove` - удаление товара из корзины
 
 #### Пример взаимодействия при загрузке товаров:
 
-1. При инициализации приложения презентер вызывает ProductService.getProducts()
+1. При инициализации приложения AppPresenter вызывает ProductService.getProducts()
 2. ProductService выполняет запрос к серверу через Api
-3. Полученные данные презентер передает в ProductModel через метод setItems()
+3. Полученные данные AppPresenter передает в ProductModel через метод setItems()
 4. ProductModel сохраняет данные и генерирует событие PRODUCTS_LOADED
-5. Презентер обрабатывает событие PRODUCTS_LOADED и обновляет представления
+5. AppPresenter обрабатывает событие PRODUCTS_LOADED и вызывает ProductGalleryView.render()
 
 #### Пример взаимодействия при добавлении товара в корзину:
 
 1. ProductCardView реагирует на клик пользователя по кнопке "В корзину" и генерирует событие PRODUCT_SELECTED с данными товара
-2. Презентер обрабатывает событие PRODUCT_SELECTED и вызывает метод addItem() модели CartModel
+2. AppPresenter обрабатывает событие PRODUCT_SELECTED и вызывает метод addItem() модели CartModel
 3. CartModel изменяет данные в поле items и генерирует событие CART_ITEM_ADDED
-4. Презентер обрабатывает событие CART_ITEM_ADDED и вызывает метод render() у CartView и ProductCardView
-5. Презентер обновляет счетчик товаров в шапке сайта, отображая актуальное количество товаров в корзине
-6. CartView перерисовывается, отображая обновленный список товаров, а ProductCardView изменяет состояние кнопки на "Убрать из корзины"
+4. AppPresenter обрабатывает событие CART_ITEM_ADDED и обновляет все представления
+5. HeaderBasketView обновляет счетчик товаров в шапке сайта
 
-#### Пример взаимодействия при удалении товара из корзины:
+#### Пример взаимодействия при валидации формы:
 
-1. CartItemView реагирует на клик пользователя по кнопке удаления и генерирует событие PRODUCT_SELECTED с данными товара
-2. Презентер обрабатывает событие PRODUCT_SELECTED и вызывает метод removeItem() модели CartModel
-3. CartModel изменяет данные в поле items и генерирует событие CART_ITEM_REMOVED
-4. Презентер обрабатывает событие CART_ITEM_REMOVED и вызывает метод render() у CartView и ProductCardView
-5. Презентер обновляет счетчик товаров в шапке сайта, отображая актуальное количество товаров в корзине
-6. CartView перерисовывается, отображая обновленный список товаров, а ProductCardView изменяет состояние кнопки на "В корзину"
-
-#### Пример взаимодействия при отправке заказа:
-
-1. PaymentFormView реагирует на отправку формы и генерирует событие ORDER_SUBMITTED (все данные уже в модели)
-2. Презентер обрабатывает событие ORDER_SUBMITTED и открывает форму с почтой и телефоном (ContactsFormView)
-3. ContactsFormView реагирует на отправку формы и генерирует событие ORDER_SUBMITTED (все данные уже в модели)
-4. Презентер обрабатывая второе событие ORDER_SUBMITTED выполняет следующие действия:
-   - Взять данные покупателя из модели OrderModel
-   - Взять сумму покупки из CartModel
-   - Взять список id товаров из CartModel
-   - Собрать из всего этого один объект, в том виде, как его требует сервер
-   - Отправить подготовленный объект на сервер через ProductService
-   - В блоке then получить ответ сервера и взять из него сумму покупки подтвержденную сервером
-   - Очистить корзину, данные покупателя
-   - Отобразить окно подтверждения, передав в него сумму покупки полученную с сервера
+1. Пользователь вводит данные в форму (PaymentFormView или ContactsFormView)
+2. Форма эмитит событие изменения поля (например, `payment:address-changed`)
+3. AppPresenter обрабатывает событие и вызывает соответствующий метод OrderModel
+4. OrderModel валидирует данные и эмитит событие `formErrors:change`
+5. AppPresenter обрабатывает событие и обновляет форму с данными о валидности
 
 ### Компоненты и их связи
 
-- Презентер ↔ ProductService - получает данные о товарах с сервера и отправляет заказы
-- Презентер ↔ ProductModel - передает данные о товарах и получает их для отображения
-- Презентер ↔ CartModel - получает данные корзины
-- Презентер ↔ OrderModel - получает данные формы заказа
-- ProductService ↔ Api - выполняет запросы к серверу для получения товаров и создания заказов
-- CartModel ↔ ProductModel - корзина работает с товарами из модели
-- ModalView ↔ ProductPreviewView/CartView/PaymentFormView/ContactsFormView/SuccessView - модальное окно отображает различные представления
-- ProductCardView ↔ ProductPreviewView - карточка товара может открыть превью
-- CartView ↔ PaymentFormView - корзина может открыть форму оплаты
-- PaymentFormView ↔ ContactsFormView - форма оплаты может перейти к форме контактов
-- ContactsFormView ↔ SuccessView - форма контактов может показать успех
+- **App** ↔ **AppPresenter** - главный класс создает и передает зависимости презентеру
+- **AppPresenter** ↔ **ProductService** - получает данные о товарах с сервера и отправляет заказы
+- **AppPresenter** ↔ **ProductModel** - передает данные о товарах и получает их для отображения
+- **AppPresenter** ↔ **CartModel** - получает данные корзины
+- **AppPresenter** ↔ **OrderModel** - получает данные формы заказа и ошибки валидации
+- **ProductService** ↔ **Api** - выполняет запросы к серверу
+- **AppModalView** ↔ **CartView/PaymentFormView/ContactsFormView** - модальное окно отображает различные представления
+- **ProductGalleryView** ↔ **ProductCardView** - галерия управляет карточками товаров
+- **HeaderBasketView** ↔ **AppPresenter** - кнопка корзины уведомляет о кликах
 
 ### Данные в приложении
 
-- IProduct - данные товара (id, title, description, image, category, price)
-- ICartItem - товар в корзине (id, title, price, index)
-- IOrderForm - данные формы заказа (payment, address, email, phone)
-- IOrder - данные для отправки заказа (total, items)
-
-**Примечание:** Данные корзины (items, total) не хранятся в отдельном интерфейсе ICart, а получаются через методы CartModel.getItems() и CartModel.getTotal() перед отправкой заказа на сервер. Презентер собирает объект IOrder из данных CartModel и OrderModel, затем использует ProductService для отправки заказа.
+- **IProduct** - данные товара (id, title, description, image, category, price)
+- **ICartItem** - товар в корзине (id, title, price, index)
+- **IOrderForm** - данные формы заказа (payment, address, email, phone)
+- **IOrder** - данные для отправки заказа (total, items)
 
 ### Процессы в приложении
 
-Все процессы реализованы через события:
-- Загрузка товаров: PRODUCTS_LOADED
-- Выбор товара: PRODUCT_SELECTED
-- Добавление в корзину: CART_ITEM_ADDED
-- Удаление из корзины: CART_ITEM_REMOVED
-- Открытие корзины: CART_OPENED
-- Изменение формы заказа: ORDER_PAYMENT_CHANGED, ORDER_ADDRESS_CHANGED, etc.
-- Отправка заказа: ORDER_SUBMITTED
-- Успешное оформление: ORDER_SUCCESS
-- Открытие/закрытие модальных окон: MODAL_OPENED, MODAL_CLOSED
-- Валидация форм: FORM_VALIDATED, FORM_ERRORS
+Все процессы реализованы через события и следуют принципам MVP:
+
+**Загрузка товаров:**
+1. AppPresenter → ProductService.getProducts()
+2. ProductService → Api.get()
+3. ProductService → ProductModel.setItems()
+4. ProductModel → событие PRODUCTS_LOADED
+5. AppPresenter → ProductGalleryView.render()
+
+**Добавление в корзину:**
+1. ProductCardView → событие PRODUCT_SELECTED
+2. AppPresenter → CartModel.addItem()
+3. CartModel → событие CART_ITEM_ADDED
+4. AppPresenter → обновление всех представлений
+
+**Валидация формы:**
+1. FormView → событие изменения поля
+2. AppPresenter → OrderModel.setField()
+3. OrderModel → валидация → событие formErrors:change
+4. AppPresenter → обновление формы с данными о валидности
+
+**Оформление заказа:**
+1. FormView → событие отправки формы
+2. AppPresenter → сбор данных из моделей
+3. AppPresenter → ProductService.createOrder()
+4. AppPresenter → очистка корзины и показ успеха
 
 ### Валидация форм
 
-Метод `validate()` в OrderModel возвращает объект с ошибками валидации:
-- Если поле валидно - оно отсутствует в объекте
-- Если поле невалидно - содержит текст ошибки
+Валидация происходит на двух уровнях:
 
-Пример возвращаемого объекта:
-```typescript
-{
-  email: 'Не указан email',
-  phone: 'Не указан телефон'
-}
-```
+#### Валидация в модели OrderModel:
+- **Модель** принимает решения о валидности данных
+- **Модель** эмитит события с ошибками валидации
+- **Презентер** связывает модель и представления через события
 
-Презентер анализирует объект ошибок:
-- Отсутствие полей означает их валидность
-- Наличие полей с текстом означает ошибки валидации
-- Готовые тексты ошибок передаются в представления для отображения
+Метод `validateForm()` в OrderModel:
+- Проверяет все поля формы
+- Сохраняет ошибки в поле formErrors
+- Эмитит событие `formErrors:change` с ошибками
+- Эмитит событие `order:ready` если форма валидна
+
+#### Валидация в модальных окнах (AppModalView):
+- **Реальная валидация** в формах оплаты и контактов
+- **Отображение ошибок** в элементе `.form__errors`
+- **Блокировка кнопок** при невалидных данных
+- **Валидация в реальном времени** при вводе данных
+
+**Сообщения об ошибках:**
+- Проверка выбора способа оплаты и заполнения адреса
+- Проверка заполнения email и телефона
 
 ### Особенности реализации
+
+#### Использование темплейтов
+- Все компоненты создаются из HTML-темплейтов через `createElementFromTemplate()`
+- Модальное окно не создает контент самостоятельно, а получает его через render()
+- Каждый компонент отвечает только за отображение переданных ему данных
+
+#### Инверсия зависимостей
+- Все компоненты получают зависимости через конструктор
+- App создает базовые сервисы и передает их презентеру
+- Презентер получает все модели и представления как зависимости
+
+#### Разделение ответственности
+- **Модели** - управление данными и валидация
+- **Представления** - отображение данных и эмит событий пользовательских действий
+- **Презентер** - координация между моделями и представлениями
+- **Сервисы** - взаимодействие с внешними API
 
 #### Обработка бесценных товаров
 - Товары с `price: null` отображаются как "Бесценно"
@@ -483,14 +616,9 @@ npm run build
 - Responsive изображения с `object-fit: contain`
 - Обработка отсутствующих изображений
 
-#### Валидация форм
-- Реальная валидация всех полей формы заказа
-- Блокировка кнопок отправки при невалидных данных
-- Отображение ошибок валидации пользователю
-- Автоматическая активация кнопок при заполнении всех обязательных полей
-
 #### Сообщения пользователю
 - "Корзина пуста" при отсутствии товаров в корзине
 - "Бесценно" для товаров без цены
 - "Недоступно" для кнопок бесценных товаров
-- Подтверждение успешного оформления заказа с суммой
+- "Заказ оформлен" с суммой списания при успешном оформлении
+- Ошибки валидации форм с соответствующими сообщениями
