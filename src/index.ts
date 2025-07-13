@@ -1,17 +1,17 @@
 import './scss/styles.scss';
 import { EventEmitter } from './components/base/events';
-import { ProductService } from './components/base/ProductService';
-import { ProductModel } from './components/base/ProductModel';
-import { CartModel } from './components/base/CartModel';
-import { OrderModel } from './components/base/OrderModel';
+import { ProductService } from './components/app/ProductService';
+import { ProductModel } from './components/app/ProductModel';
+import { CartModel } from './components/app/CartModel';
+import { OrderModel } from './components/app/OrderModel';
 import { ModalView } from './components/base/ModalView';
-import { ProductCardView } from './components/base/ProductCardView';
-import { ProductPreviewView } from './components/base/ProductPreviewView';
-import { CartItemView } from './components/base/CartItemView';
-import { CartView } from './components/base/CartView';
-import { PaymentFormView } from './components/base/PaymentFormView';
-import { ContactsFormView } from './components/base/ContactsFormView';
-import { SuccessView } from './components/base/SuccessView';
+import { ProductCardView } from './components/app/ProductCardView';
+import { ProductPreviewView } from './components/app/ProductPreviewView';
+import { CartItemView } from './components/app/CartItemView';
+import { CartView } from './components/app/CartView';
+import { PaymentFormView } from './components/app/PaymentFormView';
+import { ContactsFormView } from './components/app/ContactsFormView';
+import { SuccessView } from './components/app/SuccessView';
 import { API_URL, CDN_URL } from './utils/constants';
 import { AppEvents, IProduct, IOrder } from './types';
 

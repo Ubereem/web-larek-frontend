@@ -1,6 +1,6 @@
-import { Model } from './Model';
+import { Model } from '../base/Model';
 import { IOrderForm, AppEvents } from '../../types';
-import { IEvents } from './events';
+import { IEvents } from '../base/events';
 
 export class OrderModel extends Model<{ form: Partial<IOrderForm> }> {
     form: Partial<IOrderForm> = {};

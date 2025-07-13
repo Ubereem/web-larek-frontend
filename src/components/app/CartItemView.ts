@@ -1,6 +1,6 @@
 import { ProductView } from './ProductView';
 import { ICartItem, AppEvents } from '../../types';
-import { IEvents } from './events';
+import { IEvents } from '../base/events';
 
 export class CartItemView extends ProductView {
     private _index: HTMLElement;

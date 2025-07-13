@@ -1,17 +1,15 @@
-import { FormView } from './FormView';
+import { FormView } from '../base/FormView';
 import { AppEvents } from '../../types';
-import { IEvents } from './events';
+import { IEvents } from '../base/events';
 
 export class PaymentFormView extends FormView {
     private _paymentButtons: HTMLButtonElement[];
     private _addressInput: HTMLInputElement;
     private events: IEvents;
-    private orderModel: any; // Будет передаваться из App
 
-    constructor(container: HTMLElement, events: IEvents, orderModel?: any) {
+    constructor(container: HTMLElement, events: IEvents) {
         super(container);
         this.events = events;
-        this.orderModel = orderModel;
         this._paymentButtons = Array.from(container.querySelectorAll('.order__buttons .button')) as HTMLButtonElement[];
         this._addressInput = container.querySelector('input[name="address"]') as HTMLInputElement;
         
@@ -23,18 +21,14 @@ export class PaymentFormView extends FormView {
             btn.addEventListener('click', () => {
                 const payment = btn.name as 'card' | 'cash';
                 this.payment = payment;
-                if (this.orderModel) {
-                    this.orderModel.setPayment(payment);
-                }
+                this.events.emit(AppEvents.ORDER_PAYMENT_CHANGED, { payment });
             });
         });
 
         this._addressInput?.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
             this.address = target.value;
-            if (this.orderModel) {
-                this.orderModel.setAddress(target.value);
-            }
+            this.events.emit(AppEvents.ORDER_ADDRESS_CHANGED, { address: target.value });
         });
     }
 
@@ -53,13 +47,11 @@ export class PaymentFormView extends FormView {
     }
 
     private updateSubmitButton(): void {
-        const submitButton = this.container.querySelector('button[type="submit"]') as HTMLButtonElement;
-        if (submitButton) {
-            const orderForm = this.orderModel?.getForm();
-            const hasPayment = orderForm?.payment;
-            const hasAddress = orderForm?.address && orderForm.address.trim() !== '';
+        if (this._submitButton) {
+            const hasPayment = this._paymentButtons.some(btn => btn.classList.contains('active'));
+            const hasAddress = this._addressInput?.value && this._addressInput.value.trim() !== '';
             
-            submitButton.disabled = !hasPayment || !hasAddress;
+            this._submitButton.disabled = !hasPayment || !hasAddress;
         }
     }
 

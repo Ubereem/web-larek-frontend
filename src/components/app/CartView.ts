@@ -1,5 +1,5 @@
 import { ICartItem, AppEvents } from '../../types';
-import { IEvents } from './events';
+import { IEvents } from '../base/events';
 import { CartItemView } from './CartItemView';
 
 export class CartView {

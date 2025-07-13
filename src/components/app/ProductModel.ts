@@ -1,6 +1,6 @@
-import { Model } from './Model';
+import { Model } from '../base/Model';
 import { IProduct, AppEvents } from '../../types';
-import { IEvents } from './events';
+import { IEvents } from '../base/events';
 
 export class ProductModel extends Model<{ items: IProduct[] }> {
     items: IProduct[] = [];

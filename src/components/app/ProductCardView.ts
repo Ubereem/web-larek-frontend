@@ -1,11 +1,10 @@
 import { ProductView } from './ProductView';
 import { IProduct, ProductCategory, AppEvents } from '../../types';
-import { IEvents } from './events';
+import { IEvents } from '../base/events';
 
-export class ProductPreviewView extends ProductView {
+export class ProductCardView extends ProductView {
     private _image: HTMLImageElement;
     private _category: HTMLElement;
-    private _description: HTMLElement;
     private _button: HTMLButtonElement;
     private events: IEvents;
 
@@ -14,17 +13,27 @@ export class ProductPreviewView extends ProductView {
         this.events = events;
         this._image = container.querySelector('.card__image') as HTMLImageElement;
         this._category = container.querySelector('.card__category') as HTMLElement;
-        this._description = container.querySelector('.card__description') as HTMLElement;
         this._button = container.querySelector('.card__button') as HTMLButtonElement;
         
         this.bindEvents();
     }
 
     private bindEvents(): void {
-        this._button?.addEventListener('click', () => {
+        // Клик по кнопке «В корзину»
+        this._button?.addEventListener('click', (e) => {
+            e.stopPropagation();
             const productId = this.container.dataset.id;
             if (productId) {
                 this.events.emit(AppEvents.PRODUCT_SELECTED, { productId });
+            }
+        });
+
+        // Клик по карточке — открыть превью
+        this.container.addEventListener('click', (e) => {
+            if (e.target === this._button) return;
+            const productId = this.container.dataset.id;
+            if (productId) {
+                this.events.emit(AppEvents.MODAL_OPENED, { productId });
             }
         });
     }
@@ -62,19 +71,12 @@ export class ProductPreviewView extends ProductView {
         }
     }
 
-    set description(value: string) {
-        if (this._description) {
-            this._description.textContent = value;
-        }
-    }
-
     render(data?: Partial<IProduct>): HTMLElement {
         super.render(data);
         
-        if (data) {
+        if (data && this.container) {
             if (data.image !== undefined) this.image = data.image;
             if (data.category !== undefined) this.category = data.category;
-            if (data.description !== undefined) this.description = data.description;
             if (data.id !== undefined) this.container.dataset.id = data.id;
             if (this._button) {
                 if (data.price === null) {

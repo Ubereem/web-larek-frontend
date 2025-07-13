@@ -1,17 +1,15 @@
-import { FormView } from './FormView';
+import { FormView } from '../base/FormView';
 import { AppEvents } from '../../types';
-import { IEvents } from './events';
+import { IEvents } from '../base/events';
 
 export class ContactsFormView extends FormView {
     private _emailInput: HTMLInputElement;
     private _phoneInput: HTMLInputElement;
     private events: IEvents;
-    private orderModel: any; // Будет передаваться из App
 
-    constructor(container: HTMLElement, events: IEvents, orderModel?: any) {
+    constructor(container: HTMLElement, events: IEvents) {
         super(container);
         this.events = events;
-        this.orderModel = orderModel;
         this._emailInput = container.querySelector('input[name="email"]') as HTMLInputElement;
         this._phoneInput = container.querySelector('input[name="phone"]') as HTMLInputElement;
         
@@ -22,17 +20,13 @@ export class ContactsFormView extends FormView {
         this._emailInput?.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
             this.email = target.value;
-            if (this.orderModel) {
-                this.orderModel.setEmail(target.value);
-            }
+            this.events.emit(AppEvents.ORDER_EMAIL_CHANGED, { email: target.value });
         });
 
         this._phoneInput?.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
             this.phone = target.value;
-            if (this.orderModel) {
-                this.orderModel.setPhone(target.value);
-            }
+            this.events.emit(AppEvents.ORDER_PHONE_CHANGED, { phone: target.value });
         });
     }
 
@@ -51,13 +45,11 @@ export class ContactsFormView extends FormView {
     }
 
     private updateSubmitButton(): void {
-        const submitButton = this.container.querySelector('button[type="submit"]') as HTMLButtonElement;
-        if (submitButton) {
-            const orderForm = this.orderModel?.getForm();
-            const hasEmail = orderForm?.email && orderForm.email.trim() !== '';
-            const hasPhone = orderForm?.phone && orderForm.phone.trim() !== '';
+        if (this._submitButton) {
+            const hasEmail = this._emailInput?.value && this._emailInput.value.trim() !== '';
+            const hasPhone = this._phoneInput?.value && this._phoneInput.value.trim() !== '';
             
-            submitButton.disabled = !hasEmail || !hasPhone;
+            this._submitButton.disabled = !hasEmail || !hasPhone;
         }
     }
 
