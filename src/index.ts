@@ -4,7 +4,7 @@ import { ProductService } from './components/app/ProductService';
 import { ProductModel } from './components/app/ProductModel';
 import { CartModel } from './components/app/CartModel';
 import { OrderModel } from './components/app/OrderModel';
-import { ModalView } from './components/base/ModalView';
+import { AppModalView } from './components/app/AppModalView';
 import { ProductCardView } from './components/app/ProductCardView';
 import { ProductPreviewView } from './components/app/ProductPreviewView';
 import { CartItemView } from './components/app/CartItemView';
@@ -21,7 +21,7 @@ class App {
     private productModel: ProductModel;
     private cartModel: CartModel;
     private orderModel: OrderModel;
-    private modal: ModalView;
+    private modal: AppModalView;
     private cartView: CartView;
     private productCardViews: ProductCardView[] = [];
     private productPreviewView: ProductPreviewView | null = null;
@@ -33,7 +33,7 @@ class App {
         this.events = new EventEmitter();
         this.productModel = new ProductModel(this.events);
         this.cartModel = new CartModel(this.events);
-        this.orderModel = new OrderModel(this.events);
+        this.orderModel = new OrderModel();
         this.productService = new ProductService(API_URL, this.orderModel);
         
         this.initializeViews();
@@ -43,7 +43,7 @@ class App {
 
     private initializeViews(): void {
         // Инициализация модального окна
-        this.modal = new ModalView('#modal-container', this.events);
+        this.modal = new AppModalView('#modal-container', this.events);
         
         // Инициализация корзины
         const cartContainer = document.querySelector('.basket') as HTMLElement;
@@ -110,7 +110,7 @@ class App {
             this.updateCartCounter();
             
             // Обновляем корзину в модальном окне, если она открыта и это корзина
-            if (this.modal && document.querySelector('#modal-container')?.classList.contains('modal_active') && this.isCartModalOpen()) {
+            if (this.modal && this.isModalOpen() && this.isCartModalOpen()) {
                 this.updateCartInModal();
             }
             
@@ -265,9 +265,13 @@ class App {
 
     private updateCartInModal(): void {
         // Обновляем корзину в модальном окне, если она открыта
-        if (this.modal && document.querySelector('#modal-container')?.classList.contains('modal_active')) {
+        if (this.modal && this.isModalOpen()) {
             this.modal.showBasket(this.cartModel.getItems(), this.cartModel.getTotal());
         }
+    }
+
+    private isModalOpen(): boolean {
+        return this.modal.isOpen();
     }
 
     private isCartModalOpen(): boolean {

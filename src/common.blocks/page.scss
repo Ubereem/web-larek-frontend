@@ -8,6 +8,10 @@ html, body.page {
 	background: $background;
 }
 
+body.page_locked {
+	overflow: hidden;
+}
+
 .page__wrapper {
 	width: 100%;
 
