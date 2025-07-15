@@ -104,11 +104,6 @@ export class AppPresenter {
             this.openCartModal();
         });
 
-        // Обработка клика по кнопке корзины в шапке
-        this.events.on('header:basket-clicked', () => {
-            this.openCartModal();
-        });
-
         // Обработка оформления заказа
         this.events.on(AppEvents.ORDER_SUBMITTED, () => {
             // Если корзина пуста, не открываем форму
@@ -126,39 +121,17 @@ export class AppPresenter {
             }
         });
 
-        // Обработка событий модального окна
-        this.events.on('basket:checkout', () => {
-            // Проверяем, что корзина не пуста
-            if (this.cartModel.getItems().length > 0) {
-                this.openPaymentForm();
-            }
-        });
-
         // Обработка событий формы оплаты
-        this.events.on('payment:method-selected', (data: { payment: 'card' | 'cash' }) => {
-            this.orderModel.setPayment(data.payment);
-        });
-
-        this.events.on('payment:address-changed', (data: { address: string }) => {
-            this.orderModel.setAddress(data.address);
-        });
-
         this.events.on('payment:next', (data: { payment: 'card' | 'cash'; address: string }) => {
+            // Вносим изменения в модель только при сабмите валидной формы
             this.orderModel.setPayment(data.payment);
             this.orderModel.setAddress(data.address);
             this.openContactsForm();
         });
 
         // Обработка событий формы контактов
-        this.events.on('contacts:email-changed', (data: { email: string }) => {
-            this.orderModel.setEmail(data.email);
-        });
-
-        this.events.on('contacts:phone-changed', (data: { phone: string }) => {
-            this.orderModel.setPhone(data.phone);
-        });
-
         this.events.on('contacts:submit', (data: { email: string; phone: string }) => {
+            // Вносим изменения в модель только при сабмите валидной формы
             this.orderModel.setEmail(data.email);
             this.orderModel.setPhone(data.phone);
             this.submitOrder();
@@ -245,8 +218,15 @@ export class AppPresenter {
     }
 
     private isCartModalOpen(): boolean {
-        const modalContent = document.querySelector('#modal-container .modal__content');
-        return !!(modalContent && modalContent.querySelector('.basket'));
+        return this.modal.isCartOpen();
+    }
+
+    private isPaymentFormOpen(): boolean {
+        return this.modal.isPaymentFormOpen();
+    }
+
+    private isContactsFormOpen(): boolean {
+        return this.modal.isContactsFormOpen();
     }
 
     private handleOrderSubmission(): void {
@@ -309,8 +289,7 @@ export class AppPresenter {
         const product = this.productModel.getProductById(productId);
         if (!product) return;
         
-        const previewElement = createElementFromTemplate('card-preview');
-        this.productPreviewView = new ProductPreviewView(previewElement, this.events);
+        this.productPreviewView = ProductPreviewView.create(this.events);
         this.productPreviewView.render(product);
         this.productPreviewView.inCart = this.cartModel.isInCart(product.id);
         this.modal.render(this.productPreviewView.render());
@@ -358,15 +337,5 @@ export class AppPresenter {
         if (this.isModalOpen() && this.isContactsFormOpen()) {
             this.modal.showContactsForm();
         }
-    }
-
-    private isPaymentFormOpen(): boolean {
-        const modalContent = document.querySelector('#modal-container .modal__content');
-        return !!(modalContent && modalContent.querySelector('form[data-form="payment"]'));
-    }
-
-    private isContactsFormOpen(): boolean {
-        const modalContent = document.querySelector('#modal-container .modal__content');
-        return !!(modalContent && modalContent.querySelector('form[data-form="contacts"]'));
     }
 } 

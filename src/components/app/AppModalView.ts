@@ -82,7 +82,7 @@ export class AppModalView extends ModalView {
                 
                 checkoutButton.addEventListener('click', () => {
                     if (items.length > 0) {
-                        this.events?.emit('basket:checkout');
+                        this.events?.emit('order:submitted');
                     }
                 });
             }
@@ -121,7 +121,11 @@ export class AppModalView extends ModalView {
                 
                 if (errorsContainer) {
                     errorsContainer.textContent = errors.join(', ');
-                    errorsContainer.style.display = errors.length ? 'block' : 'none';
+                    if (errors.length) {
+                        errorsContainer.classList.remove('form__errors_hidden');
+                    } else {
+                        errorsContainer.classList.add('form__errors_hidden');
+                    }
                 }
             };
             
@@ -198,7 +202,11 @@ export class AppModalView extends ModalView {
                 
                 if (errorsContainer) {
                     errorsContainer.textContent = errors.join(', ');
-                    errorsContainer.style.display = errors.length ? 'block' : 'none';
+                    if (errors.length) {
+                        errorsContainer.classList.remove('form__errors_hidden');
+                    } else {
+                        errorsContainer.classList.add('form__errors_hidden');
+                    }
                 }
             };
             
@@ -220,5 +228,17 @@ export class AppModalView extends ModalView {
             this.contentElement = contactsForm;
             this.open();
         }
+    }
+
+    isCartOpen(): boolean {
+        return !!(this.content && this.content.querySelector('.basket'));
+    }
+
+    isPaymentFormOpen(): boolean {
+        return !!(this.content && this.content.querySelector('form[data-form="payment"]'));
+    }
+
+    isContactsFormOpen(): boolean {
+        return !!(this.content && this.content.querySelector('form[data-form="contacts"]'));
     }
 } 

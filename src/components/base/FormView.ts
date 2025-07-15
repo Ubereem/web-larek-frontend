@@ -26,7 +26,11 @@ export abstract class FormView implements IView {
     set errors(value: string[]) {
         if (this._errorsContainer) {
             this._errorsContainer.textContent = value.join(', ');
-            this._errorsContainer.style.display = value.length ? 'block' : 'none';
+            if (value.length) {
+                this._errorsContainer.classList.remove('form__errors_hidden');
+            } else {
+                this._errorsContainer.classList.add('form__errors_hidden');
+            }
         }
     }
 
@@ -50,7 +54,7 @@ export abstract class FormView implements IView {
     clearErrors(): void {
         if (this._errorsContainer) {
             this._errorsContainer.textContent = '';
-            this._errorsContainer.style.display = 'none';
+            this._errorsContainer.classList.add('form__errors_hidden');
         }
     }
 

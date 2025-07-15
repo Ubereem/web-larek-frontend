@@ -1,6 +1,7 @@
 import { ProductView } from './ProductView';
 import { IProduct, ProductCategory, AppEvents } from '../../types';
 import { IEvents } from '../base/events';
+import { createElementFromTemplate } from '../../utils/template';
 
 export class ProductPreviewView extends ProductView {
     private _image: HTMLImageElement;
@@ -110,5 +111,10 @@ export class ProductPreviewView extends ProductView {
                 this._button.classList.remove('card__button_alt-active');
             }
         }
+    }
+
+    static create(events: IEvents): ProductPreviewView {
+        const container = createElementFromTemplate('card-preview');
+        return new ProductPreviewView(container, events);
     }
 } 

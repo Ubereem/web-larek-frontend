@@ -34,4 +34,7 @@
       color: lighten($primaryLight, 23%);
     }
   }
+  &__errors_hidden {
+    display: none;
+  }
 }

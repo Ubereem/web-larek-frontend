@@ -1,4 +1,5 @@
 import { EventEmitter } from '../base/events';
+import { AppEvents } from '../../types';
 
 export class HeaderBasketView {
     private container: HTMLElement;
@@ -18,7 +19,7 @@ export class HeaderBasketView {
         
         if (this.basketButton) {
             this.basketButton.addEventListener('click', () => {
-                this.events.emit('header:basket-clicked');
+                this.events.emit(AppEvents.CART_OPENED);
             });
         }
     }
@@ -26,7 +27,11 @@ export class HeaderBasketView {
     public updateCounter(count: number): void {
         if (this.counter) {
             this.counter.textContent = count.toString();
-            this.counter.style.display = count > 0 ? 'block' : 'none';
+            if (count > 0) {
+                this.counter.classList.remove('header__basket-counter_hidden');
+            } else {
+                this.counter.classList.add('header__basket-counter_hidden');
+            }
         }
     }
 } 
