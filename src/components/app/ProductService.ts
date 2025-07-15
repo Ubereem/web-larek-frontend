@@ -16,7 +16,6 @@ export class ProductService {
             const response = await this.api.get('/product') as { total: number; items: IProduct[] };
             return response.items;
         } catch (error) {
-            console.error('Error fetching products:', error);
             throw error;
         }
     }
@@ -33,7 +32,6 @@ export class ProductService {
             const response = await this.api.post('/order', orderWithForm) as { total: number; items: string[] };
             return response;
         } catch (error) {
-            console.error('Error creating order:', error);
             throw error;
         }
     }

@@ -154,7 +154,6 @@ export class AppPresenter {
     private async loadProducts(): Promise<void> {
         try {
             const products = await this.productService.getProducts();
-            console.log('Products from API:', products);
             
             // Добавляем CDN_URL к изображениям
             const productsWithCDN = (products || []).map(product => ({
@@ -162,7 +161,6 @@ export class AppPresenter {
                 image: product.image ? `${CDN_URL}/${product.image.replace('.svg', '.png')}` : ''
             }));
             
-            console.log('Processed products:', productsWithCDN);
             this.productModel.setItems(productsWithCDN);
         } catch (error) {
             console.error('Failed to load products:', error);
@@ -242,7 +240,6 @@ export class AppPresenter {
             }
         } else {
             // Ошибки уже показаны через событие formErrors:change
-            console.log('Form validation failed');
         }
     }
 
