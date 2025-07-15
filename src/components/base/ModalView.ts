@@ -45,11 +45,19 @@ export class ModalView {
 
     open() {
         this.container.classList.add('modal_active');
+        const pageWrapper = document.querySelector('.page__wrapper');
+        if (pageWrapper) {
+            pageWrapper.classList.add('page__wrapper_locked');
+        }
     }
 
     close() {
         this.container.classList.remove('modal_active');
         this.content.innerHTML = '';
+        const pageWrapper = document.querySelector('.page__wrapper');
+        if (pageWrapper) {
+            pageWrapper.classList.remove('page__wrapper_locked');
+        }
     }
 
     render(content: HTMLElement): HTMLElement {

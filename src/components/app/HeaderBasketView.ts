@@ -27,11 +27,7 @@ export class HeaderBasketView {
     public updateCounter(count: number): void {
         if (this.counter) {
             this.counter.textContent = count.toString();
-            if (count > 0) {
-                this.counter.classList.remove('header__basket-counter_hidden');
-            } else {
-                this.counter.classList.add('header__basket-counter_hidden');
-            }
+            // Счетчик всегда видим, даже если товаров 0
         }
     }
 } 

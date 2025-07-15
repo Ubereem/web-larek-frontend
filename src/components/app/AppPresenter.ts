@@ -261,6 +261,11 @@ export class AppPresenter {
             // Очищаем корзину и форму
             this.cartModel.clear();
             this.orderModel.reset();
+
+            // Синхронизируем UI
+            this.updateCartCounter();
+            this.updateCartView();
+            this.updateProductCards();
             
             // Показываем успех
             this.showSuccess(response.total);
